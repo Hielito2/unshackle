@@ -144,7 +144,7 @@ class Tracks:
         tracks: Union[
             Tracks, Sequence[Union[AnyTrack, Chapter, Chapters, Attachment]], Track, Chapter, Chapters, Attachment
         ],
-        warn_only: bool = False,
+        warn_only: bool = True,
     ) -> None:
         """Add a provided track to its appropriate array and ensuring it's not a duplicate."""
         if isinstance(tracks, Tracks):

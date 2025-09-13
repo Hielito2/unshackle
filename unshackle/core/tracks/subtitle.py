@@ -201,6 +201,7 @@ class Subtitle(Track):
         progress: Optional[partial] = None,
         *,
         cdm: Optional[object] = None,
+        service: str = ""
     ):
         super().download(session, prepare_drm, max_workers, progress, cdm=cdm)
         if not self.path:
