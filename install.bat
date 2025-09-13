@@ -1,4 +1,5 @@
 @echo off
+# test
 setlocal EnableExtensions EnableDelayedExpansion
 
 echo.
