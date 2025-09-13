@@ -1215,7 +1215,7 @@ class dl:
 
                     final_dir.mkdir(parents=True, exist_ok=True)
                     final_path = final_dir / f"{final_filename}{muxed_path.suffix}"             
-                    if muxed_path.suffix in [".mka", ".mks"]:
+                    if muxed_path.suffix in [".mka", ".mks"] and self.service.lower() in ["amzn"]:
                         fps_file = Path(Path(__file__).parent.parent.resolve(), "fps.txt")
                         with open(fps_file, "r") as f:
                             fps = f.read().strip()
