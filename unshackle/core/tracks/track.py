@@ -183,6 +183,7 @@ class Track:
         progress: Optional[partial] = None,
         *,
         cdm: Optional[object] = None,
+        service: str = ""
     ):
         """Download and optionally Decrypt this Track."""
         from unshackle.core.manifests import DASH, HLS, ISM
@@ -200,6 +201,14 @@ class Track:
 
         track_type = self.__class__.__name__
         save_path = config.directories.temp / f"{track_type}_{self.id}.mp4"
+        if service.lower() in ["amzn"]: 
+            if track_type == "Video":
+                self.downloader = n_m3u8dl_re
+            elif track_type == "Audio":
+                self.downloader = aria2c
+        elif service.lower()  in ["hmax"]:
+            if track_type in ["Video", "Audio"]:
+                self.downloader = n_m3u8dl_re
         if track_type == "Subtitle":
             save_path = save_path.with_suffix(f".{self.codec.extension}")
             if self.downloader.__name__ == "n_m3u8dl_re":

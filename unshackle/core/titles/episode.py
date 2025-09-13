@@ -99,7 +99,7 @@ class Episode(Title):
                 name += f" {self.year}"
             name += f" S{self.season:02}"
         else:
-            name = "{title}{year} S{season:02}E{number:02} {name}".format(
+            name = "{title}{year} S{season:02}E{number:02}".format(
                 title=self.title.replace("$", "S"),  # e.g., Arli$$
                 year=f" {self.year}" if self.year and config.series_year else "",
                 season=self.season,
@@ -133,14 +133,6 @@ class Episode(Title):
 
             # 'WEB-DL'
             name += " WEB-DL"
-
-            # DUAL
-            if unique_audio_languages == 2:
-                name += " DUAL"
-
-            # MULTi
-            if unique_audio_languages > 2:
-                name += " MULTi"
 
             # Audio Codec + Channels (+ feature)
             if primary_audio_track:

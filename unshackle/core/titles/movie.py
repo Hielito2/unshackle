@@ -85,14 +85,6 @@ class Movie(Title):
             # 'WEB-DL'
             name += " WEB-DL"
 
-            # DUAL
-            if unique_audio_languages == 2:
-                name += " DUAL"
-
-            # MULTi
-            if unique_audio_languages > 2:
-                name += " MULTi"
-
             # Audio Codec + Channels (+ feature)
             if primary_audio_track:
                 codec = primary_audio_track.format

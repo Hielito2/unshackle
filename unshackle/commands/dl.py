@@ -519,6 +519,8 @@ class dl:
         console.print(Padding(titles.tree(verbose=list_titles), (0, 5)))
         if list_titles:
             return
+        
+        tries = 0
 
         for i, title in enumerate(titles):
             if isinstance(title, Episode) and wanted and f"{title.season}x{title.number}" not in wanted:
@@ -547,6 +549,7 @@ class dl:
                 self.tmdb_searched = True
 
             if isinstance(title, Movie) and (list_ or list_titles) and not self.tmdb_id:
+                kind = "movie"
                 movie_id, movie_title, _ = tags.search_show_info(title.name, title.year, "movie")
                 if movie_id:
                     console.print(
@@ -590,8 +593,15 @@ class dl:
                 title.tracks.subtitles = []
 
             with console.status("Getting tracks...", spinner="dots"):
-                title.tracks.add(service.get_tracks(title), warn_only=True)
-                title.tracks.chapters = service.get_chapters(title)
+                try:
+                    title.tracks.add(service.get_tracks(title), warn_only=True)
+                    title.tracks.chapters = service.get_chapters(title)
+                except:
+                    if tries < 3 and kind == "tv":
+                        tries+=1
+                        continue
+                    else:
+                        sys.exit(1)
 
             # strip SDH subs to non-SDH if no equivalent same-lang non-SDH is available
             # uses a loose check, e.g, wont strip en-US SDH sub if a non-SDH en-GB is available
@@ -666,30 +676,7 @@ class dl:
                         if not title.tracks.videos:
                             self.log.error(f"There's no {vbitrate}kbps Video Track...")
                             sys.exit(1)
-
-                    video_languages = [lang for lang in (v_lang or lang) if lang != "best"]
-                    if video_languages and "all" not in video_languages:
-                        processed_video_lang = []
-                        for language in video_languages:
-                            if language == "orig":
-                                if title.language:
-                                    orig_lang = (
-                                        str(title.language) if hasattr(title.language, "__str__") else title.language
-                                    )
-                                    if orig_lang not in processed_video_lang:
-                                        processed_video_lang.append(orig_lang)
-                                else:
-                                    self.log.warning(
-                                        "Original language not available for title, skipping 'orig' selection for video"
-                                    )
-                            else:
-                                if language not in processed_video_lang:
-                                    processed_video_lang.append(language)
-                        title.tracks.videos = title.tracks.by_language(title.tracks.videos, processed_video_lang)
-                        if not title.tracks.videos:
-                            self.log.error(f"There's no {processed_video_lang} Video Track...")
-                            sys.exit(1)
-
+                            
                     if quality:
                         missing_resolutions = []
                         if any(r == Video.Range.HYBRID for r in range_):
@@ -773,7 +760,11 @@ class dl:
                         title.tracks.select_audio(lambda x: x.codec == acodec)
                         if not title.tracks.audio:
                             self.log.error(f"There's no {acodec.name} Audio Tracks...")
-                            sys.exit(1)
+                            if tries < 3 and kind == "tv":
+                                tries+=1
+                                continue
+                            else:
+                                sys.exit(1)
                     if channels:
                         title.tracks.select_audio(lambda x: math.ceil(x.channels) == math.ceil(channels))
                         if not title.tracks.audio:
@@ -823,10 +814,14 @@ class dl:
                             title.tracks.audio = title.tracks.by_language(
                                 title.tracks.audio, processed_lang, per_language=per_language
                             )
-                            if not title.tracks.audio:
+                            if title.tracks.audio == [] and audio_only and not subs_only:
                                 self.log.error(f"There's no {processed_lang} Audio Track, cannot continue...")
-                                sys.exit(1)
-
+                                if tries < 3 and kind == "tv":
+                                    tries+=1
+                                    continue
+                                else:
+                                    sys.exit(1)
+                tries = 0
                 if video_only or audio_only or subs_only or chapters_only or no_subs or no_audio or no_chapters:
                     keep_videos = False
                     keep_audio = False
@@ -918,6 +913,7 @@ class dl:
                                     cdm=self.cdm,
                                     max_workers=workers,
                                     progress=tracks_progress_callables[i],
+                                    service=self.service
                                 )
                                 for i, track in enumerate(title.tracks)
                             )
@@ -1198,7 +1194,12 @@ class dl:
                         final_dir /= title.get_filename(media_info, show_service=not no_source, folder=True)
 
                     final_dir.mkdir(parents=True, exist_ok=True)
-                    final_path = final_dir / f"{final_filename}{muxed_path.suffix}"
+                    final_path = final_dir / f"{final_filename}{muxed_path.suffix}"             
+                    if muxed_path.suffix in [".mka", ".mks"]:
+                        fps_file = Path(Path(__file__).parent.parent.resolve(), "fps.txt")
+                        with open(fps_file, "r") as f:
+                            fps = f.read().strip()
+                        final_path = final_dir / f"{final_filename}[{fps}]{muxed_path.suffix}" 
 
                     shutil.move(muxed_path, final_path)
                     tags.tag_file(final_path, title, self.tmdb_id)
